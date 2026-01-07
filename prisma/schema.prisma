@@ -1,0 +1,32 @@
+// Chat application schema
+// Simple structure for conversations and messages
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String   // First message or generated title
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  text           String
+  isUser         Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  
+  // PII metadata stored as JSON
+  // Format: [{ start: number, end: number, type: string }]
+  piiSpans       String?      // JSON array of PII spans
+}
