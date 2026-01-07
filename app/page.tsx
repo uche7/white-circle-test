@@ -13,6 +13,7 @@ export default function Home() {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { sendMessage, isStreaming } = useChatStream();
 
   // Load conversations on mount
@@ -197,15 +198,68 @@ export default function Home() {
     return `${diffDays} day${diffDays > 1 ? "s" : ""}`;
   };
 
+  const handleConversationSelectMobile = (id: string) => {
+    handleConversationSelect(id);
+    setSidebarOpen(false); // Close sidebar on mobile after selection
+  };
+
+  const handleNewConversationMobile = () => {
+    handleNewConversation();
+    setSidebarOpen(false); // Close sidebar on mobile after starting new chat
+  };
+
   return (
-    <div className="flex h-screen bg-black text-white">
-      <ChatSidebar
-        chats={conversations}
-        currentConversationId={currentConversationId}
-        onNewConversation={handleNewConversation}
-        onConversationSelect={handleConversationSelect}
-      />
-      <div className="flex-1 flex flex-col">
+    <div className="flex h-screen bg-black text-white relative">
+      {/* Mobile menu button - hidden when sidebar is open */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+          className="md:hidden fixed top-4 left-4 z-50 w-10 h-10 bg-[#2a2a2a] border border-[#3a3a3a] rounded-lg flex items-center justify-center transition-colors hover:bg-[#3a3a3a]"
+          aria-label="Toggle sidebar"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="text-white"
+          >
+            <path
+              d="M3 5H17M3 10H17M3 15H17"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      )}
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div
+        className={`${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } md:translate-x-0 fixed md:static inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out`}
+      >
+        <ChatSidebar
+          chats={conversations}
+          currentConversationId={currentConversationId}
+          onNewConversation={handleNewConversationMobile}
+          onConversationSelect={handleConversationSelectMobile}
+          onClose={() => setSidebarOpen(false)}
+        />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col w-full md:w-auto">
         <MessageList messages={messages} isStreaming={isStreaming} />
         <ChatInput
           value={inputValue}

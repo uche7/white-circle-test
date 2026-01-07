@@ -5,5 +5,6 @@ export interface ChatSidebarProps {
   currentConversationId?: string | null;
   onNewConversation?: () => void;
   onConversationSelect?: (id: string) => void;
+  onClose?: () => void;
 }
 
