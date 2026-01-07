@@ -65,6 +65,11 @@ export function useChatStream() {
                   // Detect PII in real-time as text streams
                   const piiSpans = detectPII(fullText);
                   
+                  // Debug: Log PII detection
+                  if (piiSpans.length > 0) {
+                    console.log("useChatStream - PII detected:", piiSpans);
+                  }
+                  
                   // Update message in real-time with PII spans
                   onMessageUpdate({
                     id: "streaming",
@@ -82,7 +87,7 @@ export function useChatStream() {
                 if (data.done) {
                   setIsStreaming(false);
                   setStreamingMessage("");
-                  return { conversationId: currentConversationId, fullText };
+                  return { conversationId: currentConversationId, fullText, messageId: data.messageId };
                 }
               } catch (e) {
                 // Ignore JSON parse errors

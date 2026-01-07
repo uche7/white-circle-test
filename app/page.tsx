@@ -55,12 +55,26 @@ export default function Home() {
       if (response.ok) {
         const data = await response.json();
         console.log("Loaded conversation data:", data);
-        const loadedMessages: Message[] = data.messages.map((msg: any) => ({
-          id: msg.id,
-          text: msg.text,
-          isUser: msg.isUser,
-          piiSpans: msg.piiSpans ? JSON.parse(msg.piiSpans) : undefined,
-        }));
+        const loadedMessages: Message[] = data.messages.map((msg: any) => {
+          // Parse PII spans if they exist, otherwise detect them
+          let piiSpans = msg.piiSpans ? JSON.parse(msg.piiSpans) : undefined;
+          
+          // If no PII spans and it's an AI message, detect PII
+          if (!piiSpans && !msg.isUser) {
+            piiSpans = detectPII(msg.text);
+            if (piiSpans.length === 0) {
+              piiSpans = undefined;
+            }
+            console.log("Re-detected PII for loaded message:", piiSpans);
+          }
+          
+          return {
+            id: msg.id,
+            text: msg.text,
+            isUser: msg.isUser,
+            piiSpans: piiSpans,
+          };
+        });
         console.log("Setting messages:", loadedMessages);
         setMessages(loadedMessages);
       } else {
@@ -123,13 +137,16 @@ export default function Home() {
         // Final PII detection (in case any was missed during streaming)
         const finalPiiSpans = detectPII(result.fullText);
         
+        console.log("Final PII detection:", finalPiiSpans);
+        
         // Replace streaming message with final message (PII already detected during streaming)
+        const finalMessageId = result.messageId || result.conversationId + "-" + Date.now();
         setMessages((prev) => {
           const filtered = prev.filter((m) => m.id !== "streaming");
           return [
             ...filtered,
             {
-              id: result.conversationId + "-" + Date.now(),
+              id: finalMessageId,
               text: result.fullText,
               isUser: false,
               piiSpans: finalPiiSpans.length > 0 ? finalPiiSpans : undefined,
@@ -138,9 +155,8 @@ export default function Home() {
         });
 
         // Also save PII spans to database via API
-        const finalMessageId = result.conversationId + "-" + Date.now();
-        if (finalPiiSpans.length > 0) {
-          detectPIIAsync(result.fullText, finalMessageId);
+        if (finalPiiSpans.length > 0 && result.messageId) {
+          detectPIIAsync(result.fullText, result.messageId);
         }
         
         // Refresh conversations to update titles

@@ -77,12 +77,17 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ chunk, conversationId: conversation.id })}\n\n`));
           }
 
-          // Save complete assistant message
-          await db.message.create({
+          // Detect PII before saving
+          const { detectPII } = await import("@/app/lib/pii-detector");
+          const piiSpans = detectPII(fullResponse);
+          
+          // Save complete assistant message with PII spans
+          const savedMessage = await db.message.create({
             data: {
               conversationId: conversation.id,
               text: fullResponse,
               isUser: false,
+              piiSpans: piiSpans.length > 0 ? JSON.stringify(piiSpans) : null,
             },
           });
 
@@ -94,7 +99,7 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, conversationId: conversation.id })}\n\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, conversationId: conversation.id, messageId: savedMessage.id })}\n\n`));
           controller.close();
         } catch (error) {
           console.error("Streaming error:", error);
