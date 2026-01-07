@@ -1,5 +1,5 @@
-// Chat application schema
-// Simple structure for conversations and messages
+// PostgreSQL version of the schema for Vercel deployment
+// Copy this to schema.prisma when deploying to Vercel
 
 generator client {
   provider = "prisma-client-js"
@@ -12,7 +12,7 @@ datasource db {
 
 model Conversation {
   id        String   @id @default(cuid())
-  title     String   // First message or generated title
+  title     String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   messages  Message[]
@@ -25,8 +25,6 @@ model Message {
   text           String
   isUser         Boolean      @default(false)
   createdAt      DateTime     @default(now())
-  
-  // PII metadata stored as JSON
-  // Format: [{ start: number, end: number, type: string }]
   piiSpans       String?      // JSON array of PII spans
 }
+
